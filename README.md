@@ -1,7 +1,7 @@
 # auto-xtrbackup
 this shell helped you automatic backup mysql database by xtrbackup.
 
-make sure u already install Percona XtraBackup, then you can just put into below folder and grant executble permission(chmod):
+make sure u already install Percona XtraBackup, then you can just put file into below folder and grant executble permission(chmod):
 ```sh
 /usr/local/bin/
 ```
