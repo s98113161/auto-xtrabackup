@@ -1,0 +1,130 @@
+#!/bin/bash
+#description     :This script will make a full or incremental backup. you can execute frequency by add to corntab.
+#author		 :Hector.Kang
+#date            :20170614
+#version         :0.10    
+#usage		 :put this script into /usr/local/bin and you can execute by console,example below:
+#		 umbackup -b full      <----- do full backup.
+#		 umbackup -b inc       <----- do incremental backup.
+#==============================================================================
+
+#settings.
+ROOT_BACKUP_DIR=/data/backups
+LOGFILE_DIR="$ROOT_BACKUP_DIR/exec_logs"
+MYSQL_USER=root
+MYSQL_PASSWORD=123456
+#COMPRESSION=true
+
+#don't modify this section.
+dateNow=`date +%Y-%m-%d_%H-%M-%S`
+LOGFILE="$LOGFILE_DIR/$dateNow.log"
+FULLBACKUP_FILE_PATH="$ROOT_BACKUP_DIR/full/FULL_$dateNow"
+INCBACKUP_FILE_PATH="$ROOT_BACKUP_DIR/inc/INC_$dateNow"
+
+#when ROOT_BACKUP_DIR is empty create a new one.
+if [ ! -d "$ROOT_BACKUP_DIR" ]; then 
+mkdir -p $ROOT_BACKUP_DIR/{full,inc}
+fi
+
+#log file directory.
+if [ ! -d "$LOGFILE_DIR" ]; then
+mkdir $LOGFILE_DIR
+fi
+
+if [ ! -d "$ROOT_BACKUP_DIR/.incbakcups" ]; then
+touch $ROOT_BACKUP_DIR/.incbackups
+fi
+
+# Check if innobackupex is installed (percona-xtrabackup)
+if [ -z "$(command -v innobackupex)" ]; then
+        echo "The innobackupex executable was not found, check if you have installed percona-xtrabackup."
+        exit 1
+fi
+usage()
+{
+cat<<EOF >&2
+full backup : "myumbackup -b full" 
+incremental backup : "myumbackup -b inc"
+EOF
+}
+
+function exec_fullbackup(){
+	mkdir -p $FULLBACKUP_FILE_PATH
+	fullcommand="innobackupex --user=$MYSQL_USER --password=$MYSQL_PASSWORD --no-timestamp $FULLBACKUP_FILE_PATH 2> $LOGFILE"
+	echo "exec command : $fullcommand"
+	eval $fullcommand
+	echo "checking if the backup completed sucsessfully" 
+	isSuccess=$( check_backup_success )
+	if [ "$isSuccess" == "true" ]
+	then
+#	echo $FULLBACKUP_FILE_PATH >> $ROOT_BACKUP_DIR/.backups
+	echo "success!!(path:$FULLBACKUP_FILE_PATH)"
+	else
+	echo "fullbackup fail ... (log:$LOGFILE)"
+	rm -r $FULLBACKUP_FILE_PATH
+	exit 1
+	fi
+}
+function exec_incbackup(){
+	if [ ! -s $ROOT_BACKUP_DIR/.incbackups ]; then
+	   echo "$ROOT_BACKUP_DIR/.lastfullbackup is empty."
+	   echo "make full backup first time."
+	   exec_fullbackup
+	   echo $FULLBACKUP_FILE_PATH >> $ROOT_BACKUP_DIR/.incbackups
+	   exit 1
+	elif [ -s $ROOT_BACKUP_DIR/.incbackups ]; then
+	   echo "$ROOT_BACKUP_DIR/.incbackups is not empty."	
+	   lastbackup=`tail $ROOT_BACKUP_DIR/.incbackups -n 1`
+	   inccommand="innobackupex --user=$MYSQL_USER --password=$MYSQL_PASSWORD --incremental-basedir=$lastbackup --no-timestamp --incremental $INCBACKUP_FILE_PATH 2> $LOGFILE" 
+	   echo "exec command : $inccommand"
+	   eval $inccommand
+	   echo "checking if the backup completed sucsessfully"	  
+	   isSuccess=$( check_backup_success )
+	   if [ "$isSuccess" == "true" ]
+	   then
+	   	echo $INCBACKUP_FILE_PATH >> $ROOT_BACKUP_DIR/.incbackups
+	   	echo "success!!(path:$INCBACKUP_FILE_PATH)"
+	   else
+           	echo "incremental backup fail ... (log:$LOGFILE)"
+           	rm -r $INCBACKUP_FILE_PATH
+		exit 1
+	   fi
+	fi
+}
+function check_backup_success(){
+	isSuccess=""
+	if ! tail $LOGFILE -n 1 | grep -q 'completed OK'
+        then
+		isSuccess="false"
+	else
+		isSuccess="true"       
+	fi
+	echo "$isSuccess"
+}
+
+while getopts ":a:b:c:?" argv
+do
+     case $argv in
+         a)
+             VAR1=$OPTARG
+             ;;
+         b)
+             VAR2=$OPTARG
+		if [[ "$VAR2" == "full" ]]; then
+		  exec_fullbackup
+		elif [[ "$VAR2" == "inc" ]]; then
+		  exec_incbackup
+	        fi
+	     ;;
+         c)
+             VAR3=$OPTARG
+	     IFS=$'\n' read -d '' -r -a lines < /data/backups/.incbackups
+	     echo "${lines[@]}"
+             ;;
+         ?)
+             usage
+             exit
+             ;;
+     esac
+done
+
