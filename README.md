@@ -13,6 +13,11 @@ and incermental backup
 ```sh
 umbackup -b inc
 ```
+those backup file will create at 
+```sh
+/data/backups/
+```
+
 and you can execute frequency by add to crontab.
 more crontab detail see:
 https://www.computerhope.com/unix/ucrontab.htm
