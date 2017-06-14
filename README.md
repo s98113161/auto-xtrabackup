@@ -2,7 +2,9 @@
 automatic backup mysql database by xtrbackup
 
 make sure u already install Percona XtraBackup, then you can just put into below folder and grant executble permission(chmod):
+```sh
 /usr/local/bin/
+```
 and you can full backup by type command by console
 umbackup -b full
 and incermental backup
