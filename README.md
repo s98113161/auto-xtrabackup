@@ -6,10 +6,13 @@ make sure u already install Percona XtraBackup, then you can just put into below
 /usr/local/bin/
 ```
 and you can full backup by type command by console
+```sh
 umbackup -b full
+```
 and incermental backup
+```sh
 umbackup -b inc
-
+```
 and you can execute frequency by add to crontab.
 more crontab detail see:
 https://www.computerhope.com/unix/ucrontab.htm
