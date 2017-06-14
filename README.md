@@ -9,7 +9,7 @@ and you can full backup by this command
 ```sh
 umbackup -b full
 ```
-and incermental backup
+and incremental backup
 ```sh
 umbackup -b inc
 ```
