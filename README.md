@@ -5,7 +5,7 @@ make sure u already install Percona XtraBackup, then you can just put into below
 ```sh
 /usr/local/bin/
 ```
-and you can full backup by type command by console
+and you can full backup by this command 
 ```sh
 umbackup -b full
 ```
