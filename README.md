@@ -19,5 +19,5 @@ those backup file will create at
 ```
 
 and you can execute frequency by add to crontab.
-more crontab detail see:
+more crontab detail as follow:
 https://www.computerhope.com/unix/ucrontab.htm
